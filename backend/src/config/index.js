@@ -2,7 +2,7 @@ import "dotenv/config"
 
 const config = {
   port: parseInt(process.env.PORT, 10) || 3001,
-  frontendUrl: process.env.FRONTEND_URL || "http://localhost:3007",
+  frontendUrl: process.env.FRONTEND_URL || "https://aniview-r9el.vercel.app/",
   cacheTtl: parseInt(process.env.CACHE_TTL_SECONDS, 10) || 300,
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 60000,
@@ -12,7 +12,7 @@ const config = {
     headless: process.env.PUPPETEER_HEADLESS !== "false",
   },
   baseUrl: "https://animepahe.si",
-  mongoUri: process.env.MONGO_URI || "mongodb://localhost:27017/aniview",
+  mongoUri: process.env.MONGO_URI || "mongodb+srv://aniview:aniview@cluster0.0loayg7.mongodb.net/?appName=Cluster0",
   jwtSecret: process.env.JWT_SECRET || "aniview-dev-secret-change-in-production",
   jwtExpiry: process.env.JWT_EXPIRY || "7d",
 }
