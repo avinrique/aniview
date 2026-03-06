@@ -44,6 +44,12 @@ const userSchema = new mongoose.Schema({
     animeThumbnail: String,
     addedAt: { type: Date, default: Date.now },
   }],
+  watchProgress: [{
+    animeId: String,
+    episodeNumber: Number,
+    progress: { type: Number, default: 0, min: 0, max: 100 },
+    updatedAt: { type: Date, default: Date.now },
+  }],
 }, { timestamps: true })
 
 userSchema.pre("save", async function () {
@@ -64,6 +70,7 @@ userSchema.methods.toPublic = function () {
     avatar: this.avatar,
     watchHistory: this.watchHistory.slice(-50),
     favorites: this.favorites,
+    watchProgress: this.watchProgress,
     createdAt: this.createdAt,
   }
 }

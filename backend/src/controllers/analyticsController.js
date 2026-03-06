@@ -1,15 +1,28 @@
 import AnalyticsEvent from "../models/Analytics.js"
 
+function parseDevice(ua) {
+  if (!ua) return { device: "unknown", browser: "unknown" }
+  const browser =
+    ua.includes("Firefox") ? "Firefox" :
+    ua.includes("Edg") ? "Edge" :
+    ua.includes("Chrome") ? "Chrome" :
+    ua.includes("Safari") ? "Safari" :
+    ua.includes("Opera") || ua.includes("OPR") ? "Opera" : "Other"
+  const device =
+    /Mobile|Android.*Mobile|iPhone|iPod/.test(ua) ? "mobile" :
+    /iPad|Android(?!.*Mobile)|Tablet/.test(ua) ? "tablet" : "desktop"
+  return { device, browser }
+}
+
 export async function trackEvent(req, res, next) {
   try {
-    const { type, animeId, animeTitle, episodeNumber, searchQuery, sessionId, path } = req.body
+    const { type, animeId, animeTitle, episodeNumber, searchQuery, sessionId, path, origin } = req.body
 
     if (!type || !sessionId) {
       return res.status(400).json({ error: "type and sessionId are required" })
     }
 
     const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress
-    // Basic geo from IP — in production use a geo-IP service
     let country = null
     let city = null
     try {
@@ -20,8 +33,10 @@ export async function trackEvent(req, res, next) {
         city = geo.city || null
       }
     } catch {
-      // geo lookup failed, continue without it
+      // geo lookup failed
     }
+
+    const { device, browser } = parseDevice(req.headers["user-agent"])
 
     await AnalyticsEvent.create({
       type,
@@ -36,7 +51,10 @@ export async function trackEvent(req, res, next) {
       city,
       userAgent: req.headers["user-agent"],
       referrer: req.headers.referer || null,
+      origin: origin || req.headers.origin || null,
       path,
+      device,
+      browser,
     })
 
     res.json({ success: true })
@@ -52,6 +70,8 @@ export async function getDashboard(req, res, next) {
     const last7d = new Date(now - 7 * 24 * 60 * 60 * 1000)
     const last30d = new Date(now - 30 * 24 * 60 * 60 * 1000)
 
+    const User = (await import("../models/User.js")).default
+
     const [
       totalUsers,
       totalEvents,
@@ -62,14 +82,14 @@ export async function getDashboard(req, res, next) {
       countryBreakdown,
       dailyViews,
       recentEvents,
+      deviceBreakdown,
+      browserBreakdown,
+      referrerBreakdown,
+      activeUsers,
     ] = await Promise.all([
-      // Total users
-      (await import("../models/User.js")).default.countDocuments(),
-      // Total events
+      User.countDocuments(),
       AnalyticsEvent.countDocuments(),
-      // Events last 24h
       AnalyticsEvent.countDocuments({ createdAt: { $gte: last24h } }),
-      // Events last 7d
       AnalyticsEvent.countDocuments({ createdAt: { $gte: last7d } }),
       // Top watched anime (last 30 days)
       AnalyticsEvent.aggregate([
@@ -79,14 +99,14 @@ export async function getDashboard(req, res, next) {
         { $sort: { views: -1 } },
         { $limit: 20 },
       ]),
-      // Top searches (last 30 days)
+      // Top searches
       AnalyticsEvent.aggregate([
         { $match: { type: "search", createdAt: { $gte: last30d }, searchQuery: { $ne: null } } },
         { $group: { _id: { $toLower: "$searchQuery" }, count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 20 },
       ]),
-      // Country breakdown (last 30 days)
+      // Country breakdown
       AnalyticsEvent.aggregate([
         { $match: { createdAt: { $gte: last30d }, country: { $ne: null } } },
         { $group: { _id: "$country", count: { $sum: 1 }, uniqueUsers: { $addToSet: "$sessionId" } } },
@@ -94,7 +114,7 @@ export async function getDashboard(req, res, next) {
         { $sort: { count: -1 } },
         { $limit: 30 },
       ]),
-      // Daily views (last 30 days)
+      // Daily views
       AnalyticsEvent.aggregate([
         { $match: { createdAt: { $gte: last30d } } },
         {
@@ -107,12 +127,51 @@ export async function getDashboard(req, res, next) {
         { $project: { _id: 1, count: 1, uniqueUsers: { $size: "$uniqueUsers" } } },
         { $sort: { _id: 1 } },
       ]),
-      // Recent events
+      // Recent events with more detail
       AnalyticsEvent.find()
         .sort({ createdAt: -1 })
         .limit(50)
-        .select("type animeTitle episodeNumber searchQuery country city sessionId createdAt")
+        .select("type animeTitle episodeNumber searchQuery country city sessionId userId device browser origin referrer ip createdAt")
         .lean(),
+      // Device breakdown
+      AnalyticsEvent.aggregate([
+        { $match: { createdAt: { $gte: last30d }, device: { $ne: null } } },
+        { $group: { _id: "$device", count: { $sum: 1 }, uniqueUsers: { $addToSet: "$sessionId" } } },
+        { $project: { _id: 1, count: 1, uniqueUsers: { $size: "$uniqueUsers" } } },
+        { $sort: { count: -1 } },
+      ]),
+      // Browser breakdown
+      AnalyticsEvent.aggregate([
+        { $match: { createdAt: { $gte: last30d }, browser: { $ne: null } } },
+        { $group: { _id: "$browser", count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+      ]),
+      // Referrer/origin breakdown (where traffic comes from)
+      AnalyticsEvent.aggregate([
+        { $match: { createdAt: { $gte: last30d }, origin: { $ne: null } } },
+        { $group: { _id: "$origin", count: { $sum: 1 }, uniqueUsers: { $addToSet: "$sessionId" } } },
+        { $project: { _id: 1, count: 1, uniqueUsers: { $size: "$uniqueUsers" } } },
+        { $sort: { count: -1 } },
+        { $limit: 20 },
+      ]),
+      // Most active registered users (last 30d)
+      AnalyticsEvent.aggregate([
+        { $match: { createdAt: { $gte: last30d }, userId: { $ne: null } } },
+        { $group: { _id: "$userId", events: { $sum: 1 }, lastActive: { $max: "$createdAt" } } },
+        { $sort: { events: -1 } },
+        { $limit: 20 },
+        { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "user" } },
+        { $unwind: "$user" },
+        { $project: { _id: 1, events: 1, lastActive: 1, username: "$user.username", email: "$user.email" } },
+      ]),
+    ])
+
+    // Unique sessions today for "same origin" detection
+    const sessionsToday = await AnalyticsEvent.aggregate([
+      { $match: { createdAt: { $gte: last24h } } },
+      { $group: { _id: "$sessionId", ip: { $first: "$ip" }, origin: { $first: "$origin" }, device: { $first: "$device" }, events: { $sum: 1 }, userId: { $first: "$userId" } } },
+      { $sort: { events: -1 } },
+      { $limit: 50 },
     ])
 
     res.json({
@@ -122,6 +181,11 @@ export async function getDashboard(req, res, next) {
       countryBreakdown,
       dailyViews,
       recentEvents,
+      deviceBreakdown,
+      browserBreakdown,
+      referrerBreakdown,
+      activeUsers,
+      sessionsToday,
     })
   } catch (err) {
     next(err)

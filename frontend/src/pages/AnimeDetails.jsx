@@ -7,9 +7,11 @@ import EpisodeList from "../components/EpisodeList";
 import RelatedAnime from "../components/RelatedAnime";
 import AnimeDetailsSkeleton from "../components/skeletons/AnimeDetailsSkeleton";
 import ErrorMessage from "../components/ErrorMessage";
+import RatingStars from "../components/RatingStars";
+import ChatBox from "../components/ChatBox";
 
 function AnimeDetails() {
-  const { animeId } = useParams();
+  const animeId = useParams()["*"];
   const { isLoggedIn, isFavorite, addFavorite, removeFavorite } = useAuth();
   const [anime, setAnime] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -64,6 +66,8 @@ function AnimeDetails() {
           )}
           <div className="details-info">
             <h1>{anime.title}</h1>
+
+            <RatingStars animeId={animeId} animeTitle={anime.title} />
 
             {isLoggedIn && (
               <button
@@ -120,7 +124,8 @@ function AnimeDetails() {
           </div>
         </div>
 
-        <EpisodeList animeId={animeId} episodes={anime.episodes} />
+        <EpisodeList animeId={animeId} episodes={anime.episodes} cover={anime.cover} />
+        <ChatBox animeId={animeId} animeTitle={anime.title} />
         <RelatedAnime title={anime.title} />
       </div>
     </div>

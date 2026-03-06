@@ -2,7 +2,7 @@ import "dotenv/config"
 
 const config = {
   port: parseInt(process.env.PORT, 10) || 3001,
-  frontendUrl: process.env.FRONTEND_URL || "https://aniview-r9el.vercel.app/",
+  frontendUrl: process.env.FRONTEND_URL ,
   cacheTtl: parseInt(process.env.CACHE_TTL_SECONDS, 10) || 300,
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 60000,

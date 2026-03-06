@@ -3,6 +3,12 @@ import { Link } from "react-router-dom";
 import AnimeCard from "../components/AnimeCard";
 import AnimeCardSkeleton from "../components/skeletons/AnimeCardSkeleton";
 import { getFeaturedAnime, getGenres, getPopular, getTopRated } from "../api/animeApi";
+import ParticleBackground from "../components/ParticleBackground";
+import useSeason from "../hooks/useSeason";
+import { getContinueWatching, removeContinueWatching } from "../hooks/useContinueWatching";
+import ModelViewer from "../components/ModelViewer";
+import useWatchStreak from "../hooks/useWatchStreak";
+import { useAuth } from "../context/AuthContext";
 
 function Home() {
   const [featured, setFeatured] = useState([]);
@@ -10,6 +16,19 @@ function Home() {
   const [popular, setPopular] = useState([]);
   const [topRated, setTopRated] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [continueList, setContinueList] = useState([]);
+  const season = useSeason();
+  const { isLoggedIn } = useAuth();
+  const { streak } = useWatchStreak();
+
+  useEffect(() => {
+    setContinueList(getContinueWatching());
+  }, []);
+
+  const dismissContinue = (animeId) => {
+    removeContinueWatching(animeId);
+    setContinueList((prev) => prev.filter((i) => i.animeId !== animeId));
+  };
 
   useEffect(() => {
     Promise.all([
@@ -30,6 +49,7 @@ function Home() {
 
   return (
     <div className="home-page">
+      <ParticleBackground season={season} />
       {/* Hero Spotlight */}
       {spotlight ? (
         <div className="hero-spotlight">
@@ -69,6 +89,14 @@ function Home() {
               </Link>
             </div>
           </div>
+          <div className="hero-mascot">
+            <ModelViewer
+              modelType="glb"
+              modelPath="/models/gojo-satoru.glb"
+              height={260}
+              name="Gojo"
+            />
+          </div>
         </div>
       ) : loading ? (
         <div className="hero-spotlight">
@@ -77,6 +105,55 @@ function Home() {
       ) : null}
 
       <div className="container">
+        {/* Watch Streak Badge */}
+        {isLoggedIn && streak > 0 && (
+          <div className="streak-badge">
+            <span className="streak-fire">&#128293;</span>
+            <span className="streak-count">{streak} day{streak !== 1 ? "s" : ""}</span>
+            <span className="streak-label">watch streak</span>
+          </div>
+        )}
+
+        {/* Continue Watching */}
+        {continueList.length > 0 && (
+          <>
+            <div className="section-header">
+              <h2 className="section-title">Continue Watching</h2>
+            </div>
+            <div className="continue-watching-row">
+              {continueList.map((item) => (
+                <div key={item.animeId} className="cw-card">
+                  <button
+                    className="cw-dismiss"
+                    onClick={() => dismissContinue(item.animeId)}
+                    title="Remove"
+                  >
+                    &times;
+                  </button>
+                  <Link to={`/watch/${item.animeId}/${item.episodeNumber}`}>
+                    <div className="cw-thumbnail">
+                      <img src={item.thumbnail} alt={item.animeTitle} />
+                      <div className="cw-play-overlay">
+                        <span className="cw-play-icon">&#9654;</span>
+                      </div>
+                      <div className="cw-progress-bar">
+                        <div
+                          className="cw-progress-fill"
+                          style={{ width: `${item.progress}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div className="cw-info">
+                      <h4 className="cw-title">{item.animeTitle}</h4>
+                      <span className="cw-episode">Episode {item.episodeNumber}</span>
+                    </div>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
         {/* Genre Chips */}
         {genres.length > 0 && (
           <div className="genre-chips-section">

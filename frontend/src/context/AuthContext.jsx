@@ -85,6 +85,11 @@ export function AuthProvider({ children }) {
     });
   };
 
+  const updateWatchProgress = async (animeId, episodeNumber, progress) => {
+    if (!token) return;
+    await api.put("/watch-progress", { animeId, episodeNumber, progress }).catch(() => {});
+  };
+
   const isFavorite = (animeId) => {
     return user?.favorites?.some((f) => f.animeId === animeId) || false;
   };
@@ -93,7 +98,7 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={{
       user, token, loading,
       login, register, logout, updateProfile,
-      addFavorite, removeFavorite, isFavorite, addWatchHistory,
+      addFavorite, removeFavorite, isFavorite, addWatchHistory, updateWatchProgress,
       isAdmin: user?.role === "admin",
       isLoggedIn: !!user,
     }}>

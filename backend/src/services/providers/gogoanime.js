@@ -1,6 +1,7 @@
 // Gogoanime provider - content source via direct scraping (no Puppeteer needed)
 const BASES = [
-  "https://anitaku.pe",
+  "https://anitaku.to",
+  "https://gogotaku.info",
   "https://gogoanime3.co",
   "https://gogoanime.gg",
 ]
@@ -38,7 +39,7 @@ export async function search(query) {
 
   return items.slice(0, 20).map((m) => ({
     title: m[2],
-    animeId: m[1],
+    animeId: m[1].replace(/^watch\//, ""),
     thumbnail: m[3],
     releaseYear: m[4] ? parseInt(m[4]) : null,
     type: "TV",
@@ -58,7 +59,7 @@ export async function getDetails(animeId) {
   const status = extractText(html, /Status:\s*<\/span>\s*<a[^>]*>([^<]+)/)
   const releaseYear = extractText(html, /Released:\s*<\/span>\s*(\d{4})/)
 
-  // Get episode list page range
+  // Try AJAX episode list first (older gogoanime mirrors)
   const lastEpMatch = html.match(/ep_end\s*=\s*'(\d+)'/)
   const movieIdMatch = html.match(/value="(\d+)"\s*id="movie_id"/)
   const totalEps = lastEpMatch ? parseInt(lastEpMatch[1]) : 0
@@ -79,8 +80,35 @@ export async function getDetails(animeId) {
         title: `Episode ${m[2]}`,
       }))
     } catch {
-      // fallback: generate episode list from count
-      episodes = Array.from({ length: totalEps }, (_, i) => ({
+      // handled below
+    }
+  }
+
+  // Fallback: scrape episode links directly from the page HTML (only for THIS anime)
+  if (episodes.length === 0) {
+    const epPattern = new RegExp(`href="/(${animeId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}-episode-(\\d+))"`, "g")
+    const epLinks = [...html.matchAll(epPattern)]
+    const seen = new Set()
+    for (const m of epLinks) {
+      const num = parseInt(m[2])
+      if (!seen.has(num)) {
+        seen.add(num)
+        episodes.push({
+          episodeNumber: num,
+          session: m[1].trim(),
+          title: `Episode ${num}`,
+        })
+      }
+    }
+    episodes.sort((a, b) => a.episodeNumber - b.episodeNumber)
+  }
+
+  // Last fallback: extract episode count from page text and generate list
+  if (episodes.length === 0) {
+    const epCountMatch = html.match(/Episodes:\s*<\/span>\s*(\d+)/)
+    if (epCountMatch) {
+      const count = parseInt(epCountMatch[1])
+      episodes = Array.from({ length: count }, (_, i) => ({
         episodeNumber: i + 1,
         session: `${animeId}-episode-${i + 1}`,
         title: `Episode ${i + 1}`,
@@ -117,6 +145,8 @@ export async function getVideo(animeId, episodeSession) {
     else sub[`server${i + 1}`] = url
   })
 
+  if (Object.keys(sub).length === 0) return null
+
   return {
     episodeSession,
     sub,
@@ -127,7 +157,18 @@ export async function getVideo(animeId, episodeSession) {
 }
 
 export async function resolveEpisodeSession(animeId, episodeNumber) {
-  return `${animeId}-episode-${episodeNumber}`
+  // Verify the episode page actually exists before returning
+  const session = `${animeId}-episode-${episodeNumber}`
+  try {
+    const html = await fetchHtml(`/${session}`)
+    // If we get a valid page with a video player, the episode exists
+    if (html.includes("data-video") || html.includes("anime_video_body")) {
+      return session
+    }
+    return null
+  } catch {
+    return null
+  }
 }
 
 export default { name: "gogoanime", search, getDetails, getVideo, resolveEpisodeSession }

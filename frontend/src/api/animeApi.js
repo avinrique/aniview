@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "aniview-kkz1exag6-avinriques-projects.vercel.app/api",
+  baseURL: "http://localhost:3001/api",
   timeout: 60000,
 });
 

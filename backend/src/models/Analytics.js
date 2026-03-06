@@ -18,7 +18,10 @@ const eventSchema = new mongoose.Schema({
   city: String,
   userAgent: String,
   referrer: String,
+  origin: String,
   path: String,
+  device: String, // desktop, mobile, tablet
+  browser: String,
 }, { timestamps: true })
 
 eventSchema.index({ createdAt: -1 })

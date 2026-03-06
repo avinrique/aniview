@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-function EpisodeList({ animeId, episodes }) {
+function EpisodeList({ animeId, episodes, cover }) {
   if (!episodes || episodes.length === 0) {
     return <p className="empty-text">No episodes available yet.</p>;
   }
@@ -19,9 +19,9 @@ function EpisodeList({ animeId, episodes }) {
             className="episode-item"
           >
             <div className="episode-thumb">
-              {ep.snapshot ? (
+              {(ep.snapshot || cover) ? (
                 <img
-                  src={ep.snapshot}
+                  src={ep.snapshot || cover}
                   alt={`Episode ${ep.episodeNumber}`}
                   loading="lazy"
                   referrerPolicy="no-referrer"
@@ -30,6 +30,7 @@ function EpisodeList({ animeId, episodes }) {
                 <div className="episode-thumb-placeholder" />
               )}
               <div className="episode-play-icon" />
+              <span className="episode-thumb-number">EP {ep.episodeNumber}</span>
             </div>
             <div className="episode-info">
               <span className="episode-number-label">Episode {ep.episodeNumber}</span>

@@ -1,7 +1,7 @@
 import { Router } from "express"
 import {
   register, login, getProfile, updateProfile,
-  addFavorite, removeFavorite, addWatchHistory,
+  addFavorite, removeFavorite, addWatchHistory, updateWatchProgress,
 } from "../controllers/authController.js"
 import { authenticate } from "../middleware/auth.js"
 
@@ -14,5 +14,6 @@ router.put("/profile", authenticate, updateProfile)
 router.post("/favorites", authenticate, addFavorite)
 router.delete("/favorites/:animeId", authenticate, removeFavorite)
 router.post("/watch-history", authenticate, addWatchHistory)
+router.put("/watch-progress", authenticate, updateWatchProgress)
 
 export default router

@@ -1,8 +1,10 @@
 // Zoro/Aniwatch/HiAnime provider - content source via direct scraping
 const BASES = [
+  "https://hianime.sx",
+  "https://hianime.nz",
+  "https://kaido.to",
+  "https://aniwatchtv.to",
   "https://hianime.to",
-  "https://aniwatch.to",
-  "https://zoro.to",
 ]
 
 let workingBase = null
@@ -53,25 +55,37 @@ async function fetchJson(path) {
 export async function search(query) {
   const html = await fetchHtml(`/search?keyword=${encodeURIComponent(query)}`)
 
-  const items = [...html.matchAll(/<a\s+href="\/([^"]+)"\s+class="film-poster-ahref[^"]*"[\s\S]*?data-src="([^"]*)"[\s\S]*?class="film-name">\s*<a[^>]*>([^<]+)/g)]
-
-  return items.slice(0, 20).map((m) => ({
-    title: m[3].trim(),
-    animeId: m[1],
-    thumbnail: m[2],
-    releaseYear: null,
-    type: "TV",
-    episodes: 0,
-    status: "Unknown",
-    source: "zoro",
-  }))
+  // Split by flw-item to parse each card independently (avoids cross-item regex jumps)
+  const parts = html.split("flw-item")
+  const results = []
+  for (let i = 1; i < parts.length && results.length < 20; i++) {
+    const chunk = parts[i]
+    const link = chunk.match(/href="\/([^"]+)"/)
+    const title = chunk.match(/class="film-name[^"]*">\s*<a[^>]*>([^<]+)/)
+    const img = chunk.match(/data-src="([^"]+)"/)
+    if (link && title) {
+      results.push({
+        title: title[1].trim(),
+        animeId: link[1],
+        thumbnail: img ? img[1] : "",
+        releaseYear: null,
+        type: "TV",
+        episodes: 0,
+        status: "Unknown",
+        source: "zoro",
+      })
+    }
+  }
+  return results
 }
 
 export async function getDetails(animeId) {
-  const html = await fetchHtml(`/${animeId}`)
+  // Strip "watch/" prefix — info page is at /slug-12345, not /watch/slug-12345
+  const infoPath = animeId.replace(/^watch\//, "")
+  const html = await fetchHtml(`/${infoPath}`)
 
-  const title = html.match(/<h2 class="film-name[^"]*"[^>]*>([^<]+)/)?.[1]?.trim() || ""
-  const cover = html.match(/<img[^>]*class="film-poster-img[^"]*"[^>]*src="([^"]+)"/)?.[1] || ""
+  const title = html.match(/<h2[^>]*class="film-name[^"]*"[^>]*>([^<]+)/)?.[1]?.trim() || ""
+  const cover = html.match(/anisc-poster[\s\S]*?(?:src|data-src)="(https?:\/\/[^"]+)"/)?.[1] || ""
   const synopsis = (html.match(/class="film-description[^"]*"[^>]*>\s*<div class="text">([\s\S]*?)<\/div>/)?.[1] || "")
     .replace(/<[^>]+>/g, "").trim()
 

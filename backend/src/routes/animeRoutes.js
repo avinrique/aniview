@@ -15,8 +15,8 @@ router.get("/popular", popular);
 router.get("/top-rated", topRated);
 router.get("/recent", recent);
 router.get("/related", related);
-router.get("/anime/:animeId", animeDetails);
-router.get("/episode/:animeId/:episodeNumber", episode);
+router.get("/anime/:animeId(*)", animeDetails);
+router.get("/episode/:animeId(*)/:episodeNumber", episode);
 router.get("/sources/status", sourcesStatus);
 
 export default router;

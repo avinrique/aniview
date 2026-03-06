@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import axios from "axios";
+import { getPendingReels, approveReel, rejectReel } from "../api/reelApi";
 
 const api = axios.create({
   baseURL: "http://localhost:3001/api/analytics",
@@ -14,6 +15,7 @@ function AdminDashboard() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [pendingReels, setPendingReels] = useState([]);
 
   useEffect(() => {
     if (!authLoading && (!isLoggedIn || !isAdmin)) navigate("/login");
@@ -26,7 +28,18 @@ function AdminDashboard() {
       .then(({ data }) => setData(data))
       .catch((err) => setError(err.response?.data?.error || "Failed to load dashboard"))
       .finally(() => setLoading(false));
+    getPendingReels().then((d) => setPendingReels(d.reels || [])).catch(() => {});
   }, [token, isAdmin]);
+
+  const handleApprove = async (id) => {
+    await approveReel(id);
+    setPendingReels((prev) => prev.filter((r) => r._id !== id));
+  };
+
+  const handleReject = async (id) => {
+    await rejectReel(id);
+    setPendingReels((prev) => prev.filter((r) => r._id !== id));
+  };
 
   if (authLoading || loading) {
     return (
@@ -109,6 +122,67 @@ function AdminDashboard() {
           </div>
         </div>
 
+        {/* Device Breakdown */}
+        {data.deviceBreakdown?.length > 0 && (
+          <div className="admin-panel">
+            <h2>Device Breakdown (30d)</h2>
+            <div className="admin-table">
+              <div className="admin-table-header">
+                <span>Device</span>
+                <span>Events</span>
+                <span>Unique</span>
+              </div>
+              {data.deviceBreakdown.map((d) => (
+                <div key={d._id} className="admin-table-row">
+                  <span className="admin-table-title">{d._id}</span>
+                  <span>{d.count}</span>
+                  <span>{d.uniqueUsers}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Browser Breakdown */}
+        {data.browserBreakdown?.length > 0 && (
+          <div className="admin-panel">
+            <h2>Browser Breakdown (30d)</h2>
+            <div className="admin-table">
+              <div className="admin-table-header">
+                <span>Browser</span>
+                <span>Events</span>
+              </div>
+              {data.browserBreakdown.map((b) => (
+                <div key={b._id} className="admin-table-row">
+                  <span className="admin-table-title">{b._id}</span>
+                  <span>{b.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Origin/Referrer Breakdown */}
+        {data.referrerBreakdown?.length > 0 && (
+          <div className="admin-panel">
+            <h2>Traffic Sources (30d)</h2>
+            <div className="admin-table">
+              <div className="admin-table-header">
+                <span>Origin</span>
+                <span>Events</span>
+                <span>Unique</span>
+              </div>
+              {data.referrerBreakdown.map((r) => (
+                <div key={r._id} className="admin-table-row">
+                  <span className="admin-table-title">{r._id}</span>
+                  <span>{r.count}</span>
+                  <span>{r.uniqueUsers}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Country Breakdown */}
         <div className="admin-panel">
           <h2>Traffic by Country (30d)</h2>
@@ -149,6 +223,78 @@ function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Active Registered Users */}
+      {data.activeUsers?.length > 0 && (
+        <div className="admin-panel admin-full-width">
+          <h2>Most Active Users (30d)</h2>
+          <div className="admin-table">
+            <div className="admin-table-header" style={{ gridTemplateColumns: "1fr 100px 150px" }}>
+              <span>User</span>
+              <span>Events</span>
+              <span>Last Active</span>
+            </div>
+            {data.activeUsers.map((u) => (
+              <div key={u._id} className="admin-table-row" style={{ gridTemplateColumns: "1fr 100px 150px" }}>
+                <span className="admin-table-title">{u.username} <small style={{ opacity: 0.5 }}>{u.email}</small></span>
+                <span>{u.events}</span>
+                <span>{new Date(u.lastActive).toLocaleString()}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Sessions Today */}
+      {data.sessionsToday?.length > 0 && (
+        <div className="admin-panel admin-full-width">
+          <h2>Sessions Today ({data.sessionsToday.length})</h2>
+          <div className="admin-table">
+            <div className="admin-table-header" style={{ gridTemplateColumns: "1fr 120px 100px 80px 80px" }}>
+              <span>Session</span>
+              <span>IP</span>
+              <span>Origin</span>
+              <span>Device</span>
+              <span>Events</span>
+            </div>
+            {data.sessionsToday.map((s) => (
+              <div key={s._id} className="admin-table-row" style={{ gridTemplateColumns: "1fr 120px 100px 80px 80px" }}>
+                <span className="admin-table-title" style={{ fontSize: "0.7rem" }}>{s._id}</span>
+                <span style={{ fontSize: "0.75rem" }}>{s.ip}</span>
+                <span style={{ fontSize: "0.75rem" }}>{s.origin || "-"}</span>
+                <span>{s.device || "-"}</span>
+                <span>{s.events}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pending Reels */}
+      {pendingReels.length > 0 && (
+        <div className="admin-panel admin-full-width">
+          <h2>Pending Reels ({pendingReels.length})</h2>
+          <div className="admin-table">
+            <div className="admin-table-header" style={{ gridTemplateColumns: "1fr 80px 100px 140px" }}>
+              <span>Title</span>
+              <span>Type</span>
+              <span>By</span>
+              <span>Actions</span>
+            </div>
+            {pendingReels.map((r) => (
+              <div key={r._id} className="admin-table-row" style={{ gridTemplateColumns: "1fr 80px 100px 140px" }}>
+                <span className="admin-table-title">{r.title}</span>
+                <span className="admin-event-type">{r.type}</span>
+                <span>{r.postedBy?.username}</span>
+                <span style={{ display: "flex", gap: "6px" }}>
+                  <button className="btn btn-primary" style={{ padding: "4px 12px", fontSize: "0.75rem" }} onClick={() => handleApprove(r._id)}>Approve</button>
+                  <button className="btn btn-ghost" style={{ padding: "4px 12px", fontSize: "0.75rem" }} onClick={() => handleReject(r._id)}>Reject</button>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recent Events */}
       <div className="admin-panel admin-full-width">

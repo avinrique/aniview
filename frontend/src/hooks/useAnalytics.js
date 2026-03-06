@@ -26,6 +26,8 @@ function track(type, data = {}) {
     type,
     sessionId: getSessionId(),
     path: window.location.pathname,
+    origin: window.location.origin,
+    referrer: document.referrer || null,
     ...data,
   }, { headers }).catch(() => {});
 }

@@ -1,14 +1,22 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getEpisodeVideo, getAnimeDetails } from "../api/animeApi";
 import { useAuth } from "../context/AuthContext";
 import { trackEpisodeWatch } from "../hooks/useAnalytics";
+import { saveProgress } from "../hooks/useContinueWatching";
 import VideoPlayerSkeleton from "../components/skeletons/VideoPlayerSkeleton";
 import ErrorMessage from "../components/ErrorMessage";
+import ChatBox from "../components/ChatBox";
 
 function VideoPlayer() {
-  const { animeId, episodeNumber } = useParams();
-  const { addWatchHistory } = useAuth();
+  const splat = useParams()["*"] || "";
+  const lastSlash = splat.lastIndexOf("/");
+  const animeId = splat.substring(0, lastSlash);
+  const episodeNumber = splat.substring(lastSlash + 1);
+  const { addWatchHistory, updateWatchProgress, user } = useAuth();
+  const progressRef = useRef(0);
+  const startTimeRef = useRef(null);
+  const animeMetaRef = useRef(null);
   const [videoData, setVideoData] = useState(null);
   const [episodes, setEpisodes] = useState([]);
   const [animeTitle, setAnimeTitle] = useState("");
@@ -29,9 +37,22 @@ function VideoPlayer() {
       setVideoData(data);
       setEpisodes(details.episodes || []);
       setAnimeTitle(details.title || "");
+      animeMetaRef.current = {
+        title: details.title,
+        thumbnail: details.thumbnail || details.cover,
+      };
 
       const bestUrl = pickBestUrl(data.sub) || pickBestUrl(data.dub);
       if (bestUrl) setSelectedUrl(bestUrl);
+
+      // Save initial continue watching entry (0% progress)
+      saveProgress({
+        animeId,
+        episodeNumber,
+        animeTitle: details.title,
+        thumbnail: details.thumbnail || details.cover,
+        progress: 0,
+      });
 
       trackEpisodeWatch(animeId, details.title, episodeNumber);
       addWatchHistory(details, episodeNumber);
@@ -48,6 +69,47 @@ function VideoPlayer() {
     fetchVideo();
     window.scrollTo(0, 0);
   }, [fetchVideo]);
+
+  // Track watch progress with a periodic timer (every 30s)
+  useEffect(() => {
+    if (!selectedUrl) return;
+    startTimeRef.current = Date.now();
+    progressRef.current = 0;
+
+    const saveBoth = (progress) => {
+      const meta = animeMetaRef.current;
+      if (meta) {
+        saveProgress({
+          animeId,
+          episodeNumber,
+          animeTitle: meta.title,
+          thumbnail: meta.thumbnail,
+          progress,
+        });
+      }
+      if (user) {
+        updateWatchProgress(animeId, Number(episodeNumber), progress);
+      }
+    };
+
+    const interval = setInterval(() => {
+      // Estimate progress based on time watched (assume ~24min episode)
+      const elapsed = (Date.now() - startTimeRef.current) / 1000;
+      const estimatedProgress = Math.min(100, Math.round((elapsed / (24 * 60)) * 100));
+      if (estimatedProgress > progressRef.current) {
+        progressRef.current = estimatedProgress;
+        saveBoth(estimatedProgress);
+      }
+    }, 30000);
+
+    return () => {
+      // Save final progress on unmount
+      if (progressRef.current > 0) {
+        saveBoth(progressRef.current);
+      }
+      clearInterval(interval);
+    };
+  }, [selectedUrl, user, animeId, episodeNumber]);
 
   if (loading) return <VideoPlayerSkeleton />;
   if (error) return <ErrorMessage message={error} onRetry={fetchVideo} />;
@@ -151,6 +213,10 @@ function VideoPlayer() {
           Ep {nextEp} &rarr;
         </Link>
       </div>
+
+      {animeTitle && (
+        <ChatBox animeId={animeId} animeTitle={animeTitle} episodeNumber={Number(episodeNumber)} />
+      )}
 
       {episodes.length > 0 && (
         <div className="episode-selector">

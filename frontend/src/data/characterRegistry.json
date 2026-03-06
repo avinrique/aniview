@@ -1,0 +1,236 @@
+[
+  {
+    "id": "gojo-satoru",
+    "name": "Gojo Satoru",
+    "anime": "Jujutsu Kaisen",
+    "rarity": "legendary",
+    "modelType": "glb",
+    "modelPath": "/models/gojo-satoru.glb",
+    "quote": "Throughout Heaven and Earth, I alone am the honored one."
+  },
+  {
+    "id": "naruto-uzumaki",
+    "name": "Naruto Uzumaki",
+    "anime": "Naruto Shippuden",
+    "rarity": "legendary",
+    "modelType": "glb",
+    "modelPath": "/models/naruto-uzumaki.glb",
+    "quote": "I'm not gonna run away, I never go back on my word!"
+  },
+  {
+    "id": "eren-yeager",
+    "name": "Eren Yeager",
+    "anime": "Attack on Titan",
+    "rarity": "legendary",
+    "modelType": "glb",
+    "modelPath": "/models/eren-yeager.glb",
+    "quote": "If you win, you live. If you lose, you die. If you don't fight, you can't win."
+  },
+  {
+    "id": "levi-ackerman",
+    "name": "Levi Ackerman",
+    "anime": "Attack on Titan",
+    "rarity": "epic",
+    "modelType": "glb",
+    "modelPath": "/models/levi-ackerman.glb",
+    "quote": "Give up on your dreams and die."
+  },
+  {
+    "id": "zero-two",
+    "name": "Zero Two",
+    "anime": "Darling in the Franxx",
+    "rarity": "epic",
+    "modelType": "glb",
+    "modelPath": "/models/zero-two.glb",
+    "quote": "I found you, my darling."
+  },
+  {
+    "id": "mikasa-ackerman",
+    "name": "Mikasa Ackerman",
+    "anime": "Attack on Titan",
+    "rarity": "epic",
+    "modelType": "glb",
+    "modelPath": "/models/mikasa-ackerman.glb",
+    "quote": "If I can't, then I'll die. But if I win, I live."
+  },
+  {
+    "id": "sukuna",
+    "name": "Ryomen Sukuna",
+    "anime": "Jujutsu Kaisen",
+    "rarity": "epic",
+    "modelType": "glb",
+    "modelPath": "/models/sukuna.glb",
+    "quote": "Know your place, fool."
+  },
+  {
+    "id": "itachi-uchiha",
+    "name": "Itachi Uchiha",
+    "anime": "Naruto Shippuden",
+    "rarity": "epic",
+    "modelType": "glb",
+    "modelPath": "/models/itachi-uchiha.glb",
+    "quote": "People live their lives bound by what they accept as correct and true."
+  },
+  {
+    "id": "ryuk",
+    "name": "Ryuk",
+    "anime": "Death Note",
+    "rarity": "epic",
+    "modelType": "glb",
+    "modelPath": "/models/ryuk.glb",
+    "quote": "Humans are so interesting."
+  },
+  {
+    "id": "zoro-roronoa",
+    "name": "Roronoa Zoro",
+    "anime": "One Piece",
+    "rarity": "rare",
+    "modelType": "glb",
+    "modelPath": "/models/zoro-roronoa.glb",
+    "quote": "Nothing happened."
+  },
+  {
+    "id": "tanjiro-kamado",
+    "name": "Tanjiro Kamado",
+    "anime": "Demon Slayer",
+    "rarity": "rare",
+    "modelType": "glb",
+    "modelPath": "/models/tanjiro-kamado.glb",
+    "quote": "I can do it. I know I can do it."
+  },
+  {
+    "id": "todoroki-shoto",
+    "name": "Shoto Todoroki",
+    "anime": "My Hero Academia",
+    "rarity": "rare",
+    "modelType": "glb",
+    "modelPath": "/models/todoroki-shoto.glb",
+    "quote": "I'll become a hero that surpasses even you."
+  },
+  {
+    "id": "rem",
+    "name": "Rem",
+    "anime": "Re:Zero",
+    "rarity": "rare",
+    "modelType": "glb",
+    "modelPath": "/models/rem.glb",
+    "quote": "From here on, let's start over."
+  },
+  {
+    "id": "nezuko-kamado",
+    "name": "Nezuko Kamado",
+    "anime": "Demon Slayer",
+    "rarity": "rare",
+    "modelType": "glb",
+    "modelPath": "/models/nezuko-kamado.glb",
+    "quote": "..."
+  },
+  {
+    "id": "killua-zoldyck",
+    "name": "Killua Zoldyck",
+    "anime": "Hunter x Hunter",
+    "rarity": "rare",
+    "modelType": "glb",
+    "modelPath": "/models/killua-zoldyck.glb",
+    "quote": "Gon, you are light."
+  },
+  {
+    "id": "light-yagami",
+    "name": "Light Yagami",
+    "anime": "Death Note",
+    "rarity": "rare",
+    "modelType": "glb",
+    "modelPath": "/models/light-yagami.glb",
+    "quote": "I am justice! I am the god of the new world!"
+  },
+  {
+    "id": "chopper",
+    "name": "Tony Tony Chopper",
+    "anime": "One Piece",
+    "rarity": "common",
+    "modelType": "glb",
+    "modelPath": "/models/chopper.glb",
+    "quote": "Calling me cute won't make me happy, you jerk!"
+  },
+  {
+    "id": "zenitsu-agatsuma",
+    "name": "Zenitsu Agatsuma",
+    "anime": "Demon Slayer",
+    "rarity": "common",
+    "modelType": "glb",
+    "modelPath": "/models/zenitsu-agatsuma.glb",
+    "quote": "I want to live a quiet life..."
+  },
+  {
+    "id": "death-note-book",
+    "name": "Death Note",
+    "anime": "Death Note",
+    "rarity": "common",
+    "modelType": "glb",
+    "modelPath": "/models/death-note-book.glb",
+    "quote": "The human whose name is written in this note shall die."
+  },
+  {
+    "id": "zoro-swords",
+    "name": "Zoro's Swords",
+    "anime": "One Piece",
+    "rarity": "common",
+    "modelType": "glb",
+    "modelPath": "/models/zoro-swords.glb",
+    "quote": "A wound that'd make an ordinary man unconscious... I won't lose to it."
+  },
+  {
+    "id": "sukuna-finger",
+    "name": "Sukuna's Finger",
+    "anime": "Jujutsu Kaisen",
+    "rarity": "common",
+    "modelType": "glb",
+    "modelPath": "/models/sukuna-finger.glb",
+    "quote": "A cursed object of immense power."
+  },
+  {
+    "id": "tanjiro-sword",
+    "name": "Tanjiro's Nichirin Sword",
+    "anime": "Demon Slayer",
+    "rarity": "common",
+    "modelType": "glb",
+    "modelPath": "/models/tanjiro-sword.glb",
+    "quote": "The sword that slays demons."
+  },
+  {
+    "id": "chopper-monster",
+    "name": "Chopper (Monster Point)",
+    "anime": "One Piece",
+    "rarity": "common",
+    "modelType": "glb",
+    "modelPath": "/models/chopper-monster.glb",
+    "quote": "I'll become a monster for my friends!"
+  },
+  {
+    "id": "gojo-shinjuku",
+    "name": "Gojo (Shinjuku Battle)",
+    "anime": "Jujutsu Kaisen",
+    "rarity": "common",
+    "modelType": "glb",
+    "modelPath": "/models/gojo-shinjuku.glb",
+    "quote": "Are you the strongest because you're Gojo Satoru?"
+  },
+  {
+    "id": "gojo-jjk",
+    "name": "Gojo (Hand-Painted)",
+    "anime": "Jujutsu Kaisen",
+    "rarity": "common",
+    "modelType": "glb",
+    "modelPath": "/models/gojo-jjk.glb",
+    "quote": "Infinity exists everywhere."
+  },
+  {
+    "id": "naruto-hokage",
+    "name": "Naruto (Hokage)",
+    "anime": "Naruto",
+    "rarity": "common",
+    "modelType": "glb",
+    "modelPath": "/models/naruto-alt.glb",
+    "quote": "Believe it!"
+  }
+]

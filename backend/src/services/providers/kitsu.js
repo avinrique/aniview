@@ -34,4 +34,71 @@ export async function searchByTitle(query, limit = 10) {
   return (json.data || []).map(mapAnime)
 }
 
-export default { name: "kitsu", getTrending, searchByTitle }
+/**
+ * Get episode thumbnails and titles from Kitsu for a given anime title.
+ * Returns a map of episodeNumber -> { snapshot, title }
+ */
+export async function getEpisodeMeta(animeTitle) {
+  // Clean title for better Kitsu matching — strip common suffixes
+  const cleanTitle = animeTitle
+    .replace(/\s*\(TV\)\s*$/i, "")
+    .replace(/\s*\(OVA\)\s*$/i, "")
+    .replace(/\s*Season\s*\d+/i, "")
+    .trim()
+
+  // Step 1: Find the anime on Kitsu
+  const searchJson = await fetchJson(
+    `${BASE}/anime?filter[text]=${encodeURIComponent(cleanTitle)}&page[limit]=5`
+  )
+  if (!searchJson.data || searchJson.data.length === 0) return null
+
+  // Pick best match by title and episode count
+  const cleanLower = cleanTitle.toLowerCase()
+  let best = searchJson.data[0]
+  for (const item of searchJson.data) {
+    const t = (item.attributes.canonicalTitle || "").toLowerCase()
+    const tEn = (item.attributes.titles?.en || "").toLowerCase()
+    if (t === cleanLower || tEn === cleanLower) {
+      best = item
+      break
+    }
+    // Prefer entries with more episodes (likely the main series)
+    if ((item.attributes.episodeCount || 0) > (best.attributes.episodeCount || 0)) {
+      best = item
+    }
+  }
+
+  const kitsuId = best.id
+  const totalEps = best.attributes.episodeCount || 0
+
+  // Step 2: Fetch all episodes (paginated, max 20 per request)
+  const episodeMap = {}
+  let offset = 0
+  const limit = 20
+  const maxFetch = Math.min(totalEps || 500, 500) // safety cap
+
+  while (offset < maxFetch) {
+    const epJson = await fetchJson(
+      `${BASE}/anime/${kitsuId}/episodes?page[limit]=${limit}&page[offset]=${offset}&sort=number`
+    )
+    const episodes = epJson.data || []
+    if (episodes.length === 0) break
+
+    for (const ep of episodes) {
+      const a = ep.attributes
+      if (a.number != null) {
+        episodeMap[a.number] = {
+          snapshot: a.thumbnail?.original || null,
+          title: a.canonicalTitle || a.titles?.en_jp || null,
+        }
+      }
+    }
+
+    offset += limit
+    if (episodes.length < limit) break
+  }
+
+  return episodeMap
+}
+
+export default { name: "kitsu", getTrending, searchByTitle, getEpisodeMeta }

@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken"
 import config from "../config/index.js"
 import User from "../models/User.js"
+import { checkAndUnlock } from "./achievementController.js"
+import UserCoins from "../models/UserCoins.js"
 
 function signToken(user) {
   return jwt.sign({ id: user._id, role: user.role }, config.jwtSecret, {
@@ -128,6 +130,42 @@ export async function removeFavorite(req, res, next) {
   }
 }
 
+export async function updateWatchProgress(req, res, next) {
+  try {
+    const { animeId, episodeNumber, progress } = req.body
+    if (!animeId || episodeNumber == null || progress == null) {
+      return res.status(400).json({ error: "animeId, episodeNumber, and progress are required" })
+    }
+
+    const user = await User.findById(req.userId)
+    if (!user) return res.status(404).json({ error: "User not found" })
+
+    const existing = user.watchProgress.find(
+      (w) => w.animeId === animeId && w.episodeNumber === Number(episodeNumber),
+    )
+    if (existing) {
+      existing.progress = Math.min(100, Math.max(0, Number(progress)))
+      existing.updatedAt = new Date()
+    } else {
+      user.watchProgress.push({
+        animeId,
+        episodeNumber: Number(episodeNumber),
+        progress: Math.min(100, Math.max(0, Number(progress))),
+      })
+    }
+
+    // Keep last 500 entries
+    if (user.watchProgress.length > 500) {
+      user.watchProgress = user.watchProgress.slice(-500)
+    }
+
+    await user.save()
+    res.json({ success: true })
+  } catch (err) {
+    next(err)
+  }
+}
+
 export async function addWatchHistory(req, res, next) {
   try {
     const { animeId, animeTitle, animeThumbnail, episodeNumber } = req.body
@@ -150,6 +188,36 @@ export async function addWatchHistory(req, res, next) {
     }
 
     await user.save()
+
+    // Check for new achievement unlocks (fire-and-forget)
+    checkAndUnlock(req.userId).catch(() => {})
+
+    // Award 10 AniCoins for watching an episode (fire-and-forget)
+    ;(async () => {
+      let coins = await UserCoins.findOne({ userId: req.userId })
+      if (!coins) coins = await UserCoins.create({ userId: req.userId })
+      coins.balance += 10
+      coins.totalEarned += 10
+      // Update watch streak
+      const now = new Date()
+      const today = now.toDateString()
+      if (!coins.lastWatchDate || coins.lastWatchDate.toDateString() !== today) {
+        const yesterday = new Date(now)
+        yesterday.setDate(yesterday.getDate() - 1)
+        if (coins.lastWatchDate && coins.lastWatchDate.toDateString() === yesterday.toDateString()) {
+          coins.watchStreak += 1
+        } else {
+          coins.watchStreak = 1
+        }
+        coins.lastWatchDate = now
+        if (coins.watchStreak > 0 && coins.watchStreak % 7 === 0) {
+          coins.balance += 100
+          coins.totalEarned += 100
+        }
+      }
+      await coins.save()
+    })().catch(() => {})
+
     res.json({ success: true })
   } catch (err) {
     next(err)
